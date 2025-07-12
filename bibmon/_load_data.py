@@ -5,6 +5,12 @@ import importlib.resources as pkg_resources
 from ._bibmon_tools import create_df_with_dates
 from . import real_process_data, tennessee_eastman 
 
+from pathlib import Path
+import requests
+
+NASA_PCOE_URL = "https://raw.githubusercontent.com/nasa/PHM-SHM-Data-Set/main/bearing_dataset.csv"
+
+
 ###############################################################################
 
 def load_tennessee_eastman (train_id = 0, test_id = 0):
@@ -88,3 +94,25 @@ def load_real_data ():
 
     with pkg_resources.path(real_process_data,'real_process_data.csv') as file:
         return pd.read_csv(file,index_col = 0, parse_dates = True)
+
+###############################################################################
+
+def load_nasa_pcoe_dataset(use_env=False, download=False, cache_dir=None):
+    if use_env:
+        path = os.getenv("NASA_PCOE_PATH")
+        if not path:
+            raise ValueError("Variável de ambiente 'NASA_PCOE_PATH' não definida.")
+        return pd.read_csv(path)
+
+    if download:
+        if cache_dir is None:
+            raise ValueError("cache_dir é obrigatório com download=True")
+        
+        cache_path = Path(cache_dir) / "bearing_dataset.csv"
+        if not cache_path.exists():
+            r = requests.get(NASA_PCOE_URL)
+            r.raise_for_status()
+            cache_path.write_text(r.text)
+        return pd.read_csv(cache_path)
+
+    raise NotImplementedError("Especifique use_env=True ou download=True para carregar o dataset.")
